@@ -76,8 +76,8 @@ void update_position(double *x, double *y, double *vx, double *vy, int n) {
             {
                 continue;
             }
-            double distance = pow(x[i] + delta_x - x[j], 2) + pow(y[i] + delta_y - y[j], 2);
-            if (distance < radius2)
+            double distance = pow(x[i] - x_ori[j], 2) + pow(y[i] - y_ori[j], 2);
+            if (distance <= radius2)
             {
                 vx[i] = -vx[i];
                 vy[i] = -vy[i];
@@ -94,7 +94,7 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
     // calculate force and acceleration, update velocity
     for (int i = 0; i < n; i++)
     {
-        for (int j = i; j < n; j++)
+        for (int j = i+1; j < n; j++)
         {
             // for each pair of bodies
             // calculate distance
@@ -169,11 +169,11 @@ void master() {
         #endif
     }
 
-    delete m;
-    delete x;
-    delete y;
-    delete vx;
-    delete vy;
+    delete[] m;
+    delete[] x;
+    delete[] y;
+    delete[] vx;
+    delete[] vy;
     
 }
 
