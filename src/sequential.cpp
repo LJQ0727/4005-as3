@@ -30,38 +30,60 @@ void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) 
 
 void update_position(double *x, double *y, double *vx, double *vy, int n) {
     //TODO: update position 
+
+    // make a copy so that we can refer to the original position when determining collision
+    double x_ori[n];
+    double y_ori[n];
     for (int i = 0; i < n; i++)
     {
-        // check if the body is out of bound, and if so bounce back
-        if (x[i] + vx[i] * dt < 0 || x[i] + vx[i] * dt > bound_x)
-        {
+        x_ori[i] = x[i];
+        y_ori[i] = y[i];
+    }
+
+    // update position for each body
+    for (int i = 0; i < n; i++)
+    {
+        double delta_x = vx[i] * dt;    // the estimated distance that the body will move in the x direction
+        double delta_y = vy[i] * dt;    // the estimated distance that the body will move in the y direction
+
+        // check if the body will go out of bounds. If so, it will be located at the boundary with a bounced velocity
+        if (x[i] + delta_x <= 0) {
+            x[i] = 0;
             vx[i] = -vx[i];
         }
-        if (y[i] + vy[i] * dt < 0 || y[i] + vy[i] * dt > bound_y)
-        {
+        else if (x[i] + delta_x >= bound_x) {
+            x[i] = bound_x;
+            vx[i] = -vx[i];
+        }
+        if (y[i] + delta_y <= 0) {
+            y[i] = 0;
+            vy[i] = -vy[i];
+        }
+        else if (y[i] + delta_y >= bound_y) {
+            y[i] = bound_y;
             vy[i] = -vy[i];
         }
 
+        // update the position
+        x[i] += delta_x;
+        y[i] += delta_y;
 
-        int delta_x = vx[i] * dt;
-        int delta_y = vy[i] * dt;
 
-// TODO
-        // check if the updated position will cause collision, if so bounce back
-        for (int j = i+1; j < n; j++)
+        // check if the updated position will cause collision, if so, it will be in the updated position with a bounced velocity
+        for (int j = 0; j < n; j++)
         {
-            double distance = pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2);
+            if (i == j)
+            {
+                continue;
+            }
+            double distance = pow(x[i] + delta_x - x[j], 2) + pow(y[i] + delta_y - y[j], 2);
             if (distance < radius2)
             {
                 vx[i] = -vx[i];
                 vy[i] = -vy[i];
-                x[i] += delta_x;
-                y[i] += delta_y;
+                break;
             }
         }
-        // update position
-        x[i] += delta_x;
-        y[i] += delta_y;
 
     }
     
@@ -69,7 +91,7 @@ void update_position(double *x, double *y, double *vx, double *vy, int n) {
 }
 
 void update_velocity(double *m, double *x, double *y, double *vx, double *vy, int n) {
-    //TODO: calculate force and acceleration, update velocity
+    // calculate force and acceleration, update velocity
     for (int i = 0; i < n; i++)
     {
         for (int j = i; j < n; j++)
@@ -79,6 +101,7 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
             double distance_x = x[i] - x[j];
             double distance_y = y[i] - y[j];
             double distance = sqrt(distance_x * distance_x + distance_y * distance_y);
+
                         
             // calculate force
             double force = gravity_const * m[i] * m[j] / (distance * distance + error); // the force scalar
@@ -97,8 +120,6 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
             vy[j] -= acceleration_y_itoj * dt;
         }
     }
-    // update position
-    update_position(x, y, vx, vy, n);
         
 }
     
