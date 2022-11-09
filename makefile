@@ -1,5 +1,18 @@
+n_body := 100
+n_iterations := 100
+
+checkpoint_folder := ./checkpoints/sequential_1000_20221107093003
+
+
+default: run_seq
+
+run_seq: seq
+	./seq $(n_body) $(n_iterations)
+run_video: video
+	./video $(checkpoint_folder)
+
 seq:
-	g++ ./src/sequential.cpp -o seq -O2 -std=c++11
+	g++ -g3 ./src/sequential.cpp -o seq -O2 -std=c++11
 mpi:	
 	mpic++ ./src/mpi.cpp -o mpi -std=c++11
 pthread:
