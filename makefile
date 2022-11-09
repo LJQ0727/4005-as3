@@ -1,18 +1,21 @@
 n_body := 100
-n_iterations := 100
+n_iterations := 1000
 
-checkpoint_folder := ./checkpoints/sequential_1000_20221107093003
+checkpoint_folder := ./checkpoints/sequential_100_20221109192429/
 
+C_FLAG := -g3
 
 default: run_seq
 
 run_seq: seq
 	./seq $(n_body) $(n_iterations)
+run_seqg: seqg
+	./seqg $(n_body) $(n_iterations)
 run_video: video
 	./video $(checkpoint_folder)
 
 seq:
-	g++ -g3 ./src/sequential.cpp -o seq -O2 -std=c++11
+	g++ $(C_FLAG) ./src/sequential.cpp -o seq -std=c++11
 mpi:	
 	mpic++ ./src/mpi.cpp -o mpi -std=c++11
 pthread:
@@ -20,7 +23,7 @@ pthread:
 cuda:
 	nvcc ./src/cuda.cu -o cuda -O2 --std=c++11
 seqg:
-	g++ ./src/sequential.cpp -o seqg -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -O2 -std=c++11
+	g++ $(C_FLAG) ./src/sequential.cpp -o seqg -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
 mpig:
 	mpic++ ./src/mpi.cpp -o mpig -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
 pthreadg:

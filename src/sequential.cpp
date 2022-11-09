@@ -114,10 +114,10 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
             double acceleration_y_itoj = -acceleration_y_jtoi;
 
             // update velocity
-            vx[i] -= acceleration_x_jtoi * dt;
-            vy[i] -= acceleration_y_jtoi * dt;
-            vx[j] -= acceleration_x_itoj * dt;
-            vy[j] -= acceleration_y_itoj * dt;
+            vx[i] += acceleration_x_jtoi * dt;
+            vy[i] += acceleration_y_jtoi * dt;
+            vx[j] += acceleration_x_itoj * dt;
+            vy[j] += acceleration_y_itoj * dt;
         }
     }
         
