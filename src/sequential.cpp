@@ -30,21 +30,86 @@ void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) 
 
 void update_position(double *x, double *y, double *vx, double *vy, int n) {
     //TODO: update position 
+    for (int i = 0; i < n; i++)
+    {
+        // check if the body is out of bound, and if so bounce back
+        if (x[i] + vx[i] * dt < 0 || x[i] + vx[i] * dt > bound_x)
+        {
+            vx[i] = -vx[i];
+        }
+        if (y[i] + vy[i] * dt < 0 || y[i] + vy[i] * dt > bound_y)
+        {
+            vy[i] = -vy[i];
+        }
+
+
+        int delta_x = vx[i] * dt;
+        int delta_y = vy[i] * dt;
+
+// TODO
+        // check if the updated position will cause collision, if so bounce back
+        for (int j = i+1; j < n; j++)
+        {
+            double distance = pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2);
+            if (distance < radius2)
+            {
+                vx[i] = -vx[i];
+                vy[i] = -vy[i];
+                x[i] += delta_x;
+                y[i] += delta_y;
+            }
+        }
+        // update position
+        x[i] += delta_x;
+        y[i] += delta_y;
+
+    }
+    
 
 }
 
 void update_velocity(double *m, double *x, double *y, double *vx, double *vy, int n) {
     //TODO: calculate force and acceleration, update velocity
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = i; j < n; j++)
+        {
+            // for each pair of bodies
+            // calculate distance
+            double distance_x = x[i] - x[j];
+            double distance_y = y[i] - y[j];
+            double distance = sqrt(distance_x * distance_x + distance_y * distance_y);
+                        
+            // calculate force
+            double force = gravity_const * m[i] * m[j] / (distance * distance + error); // the force scalar
+            // calculate acceleration from j to i
+            double acceleration = force / m[i];
+            double acceleration_x_jtoi = -acceleration * distance_x / distance;  // acceleration on i on x axis
+            double acceleration_y_jtoi = -acceleration * distance_y / distance;
+            // calculate acceleration from i to j
+            double acceleration_x_itoj = -acceleration_x_jtoi;
+            double acceleration_y_itoj = -acceleration_y_jtoi;
 
+            // update velocity
+            vx[i] -= acceleration_x_jtoi * dt;
+            vy[i] -= acceleration_y_jtoi * dt;
+            vx[j] -= acceleration_x_itoj * dt;
+            vy[j] -= acceleration_y_itoj * dt;
+        }
+    }
+    // update position
+    update_position(x, y, vx, vy, n);
+        
 }
+    
 
 
 void master() {
-    double* m = new double[n_body];
-    double* x = new double[n_body];
-    double* y = new double[n_body];
-    double* vx = new double[n_body];
-    double* vy = new double[n_body];
+    double* m = new double[n_body]; // mass of each body
+    double* x = new double[n_body]; // x location of each body
+    double* y = new double[n_body]; // y location of each body
+    double* vx = new double[n_body];    // initial x velocity of each body
+    double* vy = new double[n_body];    // initial y velocity of each body
 
     generate_data(m, x, y, vx, vy, n_body);
 
@@ -108,8 +173,8 @@ int main(int argc, char *argv[]){
     #endif
     master();
 
-    printf("Student ID: 119010001\n"); // replace it with your student id
-    printf("Name: Your Name\n"); // replace it with your name
+    printf("Student ID: 120090727\n"); // replace it with your student id
+    printf("Name: Li Jiaqi\n"); // replace it with your name
     printf("Assignment 2: N Body Simulation Sequential Implementation\n");
     
     return 0;
