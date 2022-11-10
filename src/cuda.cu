@@ -21,20 +21,79 @@ int block_size = 1024;
 int n_body;
 int n_iteration;
 
+__device__ __managed__ int bound_x_d = 4000;
+__device__ __managed__ int bound_y_d = 4000;
+__device__ __managed__ int max_mass_d = 40000000;
+__device__ __managed__ double error_d = 1e-9f;
+__device__ __managed__ double dt_d = 0.0001f;
+__device__ __managed__ double gravity_const_d = 1.0f;
+__device__ __managed__ double radius2_d = 4.0f;
+
 
 __global__ void update_position(double *x, double *y, double *vx, double *vy, int n) {
-    //TODO: update position 
-    // int i = blockDim.x * blockIdx.x + threadIdx.x;
-    // if (i < n) {
-    // }
+    // update position 
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) {
+        x[i] += vx[i] * dt_d;
+        y[i] += vy[i] * dt_d;
+    }
 }
 
 __global__ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, int n) {
     //TODO: calculate force and acceleration, update velocity
-    // int i = blockDim.x * blockIdx.x + threadIdx.x;
-    // if (i < n) {  
-    // }
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) {
+        for (int j = 0; j < n; j++)
+        {
+            if (i == j) continue;
+
+            // for each pair of bodies
+            // calculate distance
+            double distance_x = x[i] - x[j];
+            double distance_y = y[i] - y[j];
+            double distance = sqrt(distance_x * distance_x + distance_y * distance_y);
+
+            
+            // calculate force
+            double force = gravity_const_d * m[i] * m[j] / (distance * distance + error_d); // the force scalar
+            // calculate acceleration from j to i
+            double acceleration_i = force / m[i];
+            double acceleration_x_i = -acceleration_i * distance_x / distance;  // acceleration on i on x axis
+            double acceleration_y_i = -acceleration_i * distance_y / distance;
+
+            if (distance < radius2_d)
+            {
+                // if the distance is too small, we will reverse the velocity of the two bodies
+                // we give them a little push to prevent from colliding again
+                vx[i] = -vx[i];
+                vy[i] = -vy[i];
+                break;
+            }
+
+            // update velocity
+            vx[i] += acceleration_x_i * dt_d;
+            vy[i] += acceleration_y_i * dt_d;
+        }
+        
+    }
 }
+
+__global__ void check_bounds(double *x, double *y, double *vx, double *vy, int n_body) {
+    //check if the body will go out of bounds. If so, it will bounce back
+    for (int i = 0; i < n_body; i++)
+    {
+        if (x[i] <= 0 || x[i] >= bound_x_d)
+        {
+            vx[i] = -vx[i];
+        }
+        if (y[i] <= 0 || y[i] >= bound_y_d)
+        {
+            vy[i] = -vy[i];
+        }
+    }
+
+} 
+
 
 
 void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) {
@@ -78,13 +137,14 @@ void master() {
     cudaMemcpy(device_vx, vx, n_body, cudaMemcpyHostToDevice);
     cudaMemcpy(device_vy, vy, n_body, cudaMemcpyHostToDevice);
 
-    int n_block = n_body / block_size + 1;
+    int n_block = n_body / block_size + 1;  
 
     for (int i = 0; i < n_iteration; i++){
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
         update_velocity<<<n_block, block_size>>>(device_m, device_x, device_y, device_vx, device_vy, n_body);
         update_position<<<n_block, block_size>>>(device_x, device_y, device_vx, device_vy, n_body);
+        check_bounds<<<1,1>>>(device_x, device_y, device_vx, device_vy, n_body);
 
         cudaMemcpy(x, device_x, n_body, cudaMemcpyDeviceToHost);
         cudaMemcpy(y, device_y, n_body, cudaMemcpyDeviceToHost);
@@ -128,11 +188,11 @@ void master() {
     cudaFree(device_vx);
     cudaFree(device_vy);
 
-    delete m;
-    delete x;
-    delete y;
-    delete vx;
-    delete vy;
+    delete[] m;
+    delete[] x;
+    delete[] y;
+    delete[] vx;
+    delete[] vy;
     
 }
 
@@ -154,8 +214,8 @@ int main(int argc, char *argv[]){
 
     master();
 
-    printf("Student ID: 119010001\n"); // replace it with your student id
-    printf("Name: Your Name\n"); // replace it with your name
+    printf("Student ID: 120090727\n"); // replace it with your student id
+    printf("Name: Li Jiaqi\n"); // replace it with your name
     printf("Assignment 2: N Body Simulation CUDA Implementation\n");
 
     return 0;

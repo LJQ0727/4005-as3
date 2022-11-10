@@ -23,6 +23,13 @@ run_openmp: openmp
 	./openmp $(n_body) $(n_iterations) $(n_omp_threads)
 run_openmpg: openmpg
 	./openmpg $(n_body) $(n_iterations) $(n_omp_threads)
+run_cuda: cuda
+	./cuda $(n_body) $(n_iterations)
+run_cudag: cudag
+	./cudag $(n_body) $(n_iterations)
+
+
+
 run_video: video
 	./video $(checkpoint_folder)
 
