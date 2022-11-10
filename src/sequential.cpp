@@ -18,7 +18,7 @@ int n_iteration;
 void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) {
     // TODO: Generate proper initial position and mass for better visualization
     for (int i = 0; i < n; i++) {
-        m[i] = rand() % max_mass + 1.0f;
+        m[i] = rand() % (max_mass/2) + max_mass/4;
         x[i] = rand() % bound_x;
         y[i] = rand() % bound_y;
         vx[i] = 0.0f;
@@ -86,10 +86,10 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
             {
                 // if the distance is too small, we will reverse the velocity of the two bodies
                 // we give them a little push to prevent from colliding again
-                vx[i] = -1.01*vx[i];
-                vy[i] = -1.01*vy[i];
-                vx[j] = -1.01*vx[j];
-                vy[j] = -1.01*vy[j];
+                vx[i] = -vx[i];
+                vy[i] = -vy[i];
+                vx[j] = -vx[j];
+                vy[j] = -vy[j];
                 break;
             }
 
