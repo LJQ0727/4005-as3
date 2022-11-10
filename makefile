@@ -1,16 +1,23 @@
-n_body := 100
-n_iterations := 1000
+n_body := 1000
+n_iterations := 5000
+
+n_thds := 4
 
 checkpoint_folder := ./checkpoints/sequential_100_20221109192429/
 
+# change to -O2 in prod
 C_FLAG := -g3
 
-default: run_seq
+default: run_pthread
 
 run_seq: seq
 	./seq $(n_body) $(n_iterations)
 run_seqg: seqg
 	./seqg $(n_body) $(n_iterations)
+run_pthread: pthread
+	./pthread $(n_body) $(n_iterations) $(n_thds)
+run_pthreadg: pthreadg
+	./pthreadg $(n_body) $(n_iterations) $(n_thds)
 run_video: video
 	./video $(checkpoint_folder)
 
@@ -19,7 +26,7 @@ seq:
 mpi:	
 	mpic++ ./src/mpi.cpp -o mpi -std=c++11
 pthread:
-	g++ ./src/pthread.cpp -o pthread -lpthread -O2 -std=c++11
+	g++ $(C_FLAG) ./src/pthread.cpp -o pthread -lpthread -std=c++11
 cuda:
 	nvcc ./src/cuda.cu -o cuda -O2 --std=c++11
 seqg:
@@ -27,7 +34,7 @@ seqg:
 mpig:
 	mpic++ ./src/mpi.cpp -o mpig -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
 pthreadg:
-	g++ ./src/pthread.cpp -o pthreadg -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -lpthread -DGUI -O2 -std=c++11
+	g++ $(C_FLAG) ./src/pthread.cpp -o pthreadg -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -lpthread -DGUI -std=c++11
 cudag:
 	nvcc ./src/cuda.cu -o cudag -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -O2 -DGUI --std=c++11
 openmp:
