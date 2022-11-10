@@ -31,57 +31,30 @@ void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) 
 void update_position(double *x, double *y, double *vx, double *vy, int n) {
     //TODO: update position 
 
-    // make a copy so that we can refer to the original position when determining collision
-    // double x_ori[n];
-    // double y_ori[n];
-    // for (int i = 0; i < n; i++)
-    // {
-    //     x_ori[i] = x[i];
-    //     y_ori[i] = y[i];
-    // }
-
     // update position for each body
     for (int i = 0; i < n; i++)
     {
         double delta_x = vx[i] * dt;    // the estimated distance that the body will move in the x direction
         double delta_y = vy[i] * dt;    // the estimated distance that the body will move in the y direction
 
-        //check if the body will go out of bounds. If so, it will bounce back
-        if (x[i] + delta_x <= 0) {
-            vx[i] = -vx[i];
-        }
-        else if (x[i] + delta_x >= bound_x) {
-            vx[i] = -vx[i];
-        }
-        if (y[i] + delta_y <= 0) {
-            vy[i] = -vy[i];
-        }
-        else if (y[i] + delta_y >= bound_y) {
-            vy[i] = -vy[i];
-        }
-
         // update the position
         x[i] += delta_x;
         y[i] += delta_y;
 
-        // check if the updated position will cause collision, if so, it will be in the updated position with a bounced velocity
-        for (int j = 0; j < n; j++)
-        {
-            if (i == j)
-            {
-                continue;
-            }
-            double distance = pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2);
-            if (distance <= radius2)
-            {
-                vx[i] = -vx[i];
-                vy[i] = -vy[i];
-                break;
-            }
-        }
-
     }
     
+    //check if the body will go out of bounds. If so, it will bounce back
+    for (int i = 0; i < n; i++)
+    {
+        if (x[i] <= 0 || x[i] >= bound_x)
+        {
+            vx[i] = -vx[i];
+        }
+        if (y[i] <= 0 || y[i] >= bound_y)
+        {
+            vy[i] = -vy[i];
+        }
+    }
 
 }
 
@@ -109,11 +82,23 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
             double acceleration_x_j = acceleration_j * distance_x / distance;  // acceleration on j on x axis
             double acceleration_y_j = acceleration_j * distance_y / distance;
 
+            if (distance < radius2)
+            {
+                // if the distance is too small, we will reverse the velocity of the two bodies
+                // we give them a little push to prevent from colliding again
+                vx[i] = -1.01*vx[i];
+                vy[i] = -1.01*vy[i];
+                vx[j] = -1.01*vx[j];
+                vy[j] = -1.01*vy[j];
+                break;
+            }
+
             // update velocity
             vx[i] += acceleration_x_i * dt;
             vy[i] += acceleration_y_i * dt;
             vx[j] += acceleration_x_j * dt;
             vy[j] += acceleration_y_j * dt;
+
         }
     }
         
