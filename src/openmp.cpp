@@ -30,16 +30,74 @@ void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) 
     }
 }
 
+void check_bounds(double *x, double *y, double *vx, double *vy, int n_body) {
+    //check if the body will go out of bounds. If so, it will bounce back
+    #pragma omp parallel for
+    for (int i = 0; i < n_body; i++)
+    {
+        if (x[i] <= 0 || x[i] >= bound_x)
+        {
+            vx[i] = -vx[i];
+        }
+        if (y[i] <= 0 || y[i] >= bound_y)
+        {
+            vy[i] = -vy[i];
+        }
+    }
+
+} 
 
 
-void update_position(double *x, double *y, double *vx, double *vy, int i) {
-    //TODO: update position
+void update_position(double *x, double *y, double *vx, double *vy, int idx) {
+    //TODO: update position 
+
+    // update position for the body at idx 
+    double delta_x = vx[idx] * dt;    // the estimated distance that the body will move in the x direction
+    double delta_y = vy[idx] * dt;    // the estimated distance that the body will move in the y direction
+
+    // update the position
+    x[idx] += delta_x;
+    y[idx] += delta_y;
+
 
 }
 
-void update_velocity(double *m, double *x, double *y, double *vx, double *vy, int i) {
-    //TODO: calculate force and acceleration, update velocity
+void update_velocity(double *m, double *x, double *y, double *vx, double *vy, int idx, int n_body) {
+    // calculate force and acceleration, update velocity
+    for (int j = 0; j < n_body; j++)
+    {
+        if (j == idx) continue;
 
+        // for each pair of bodies
+        // calculate distance
+        double distance_x = x[idx] - x[j];
+        double distance_y = y[idx] - y[j];
+        double distance = sqrt(distance_x * distance_x + distance_y * distance_y);
+
+                    
+        // calculate force
+        double force = gravity_const * m[idx] * m[j] / (distance * distance + error); // the force scalar
+        // calculate acceleration from j to i
+        double acceleration_i = force / m[idx];
+        double acceleration_x_i = -acceleration_i * distance_x / distance;  // acceleration on i on x axis
+        double acceleration_y_i = -acceleration_i * distance_y / distance;
+
+        if (distance < radius2)
+        {
+            // if the distance is too small, we will reverse the velocity
+            // we give them a little push to prevent from colliding again
+            vx[idx] = -vx[idx];
+            vy[idx] = -vy[idx];
+            break;
+        }
+
+        // update velocity
+        vx[idx] += acceleration_x_i * dt;
+        vy[idx] += acceleration_y_i * dt;
+
+    }
+    
+        
 }
 
 
@@ -52,7 +110,7 @@ void master() {
 
     generate_data(m, x, y, vx, vy, n_body);
 
-    Logger l = Logger("sequential", n_body, bound_x, bound_y);
+    Logger l = Logger("openmp", n_body, bound_x, bound_y);
 
     for (int i = 0; i < n_iteration; i++){
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
@@ -61,7 +119,7 @@ void master() {
         omp_set_num_threads(n_omp_threads);
         #pragma omp parallel for
         for (int i = 0; i < n_body; i++) {
-            update_velocity(m, x, y, vx, vy, i);
+            update_velocity(m, x, y, vx, vy, i, n_body);
         }
 
         omp_set_num_threads(8);
@@ -69,6 +127,8 @@ void master() {
         for (int i = 0; i < n_body; i++) {
             update_position(x, y, vx, vy, i);
         }
+
+        check_bounds(x, y, vx, vy, n_body);
 
         l.save_frame(x, y);
 
@@ -97,11 +157,11 @@ void master() {
         #endif
     }
 
-    delete m;
-    delete x;
-    delete y;
-    delete vx;
-    delete vy;
+    delete[] m;
+    delete[] x;
+    delete[] y;
+    delete[] vx;
+    delete[] vy;
     
 }
 
@@ -123,8 +183,8 @@ int main(int argc, char *argv[]){
     #endif
     master();
 
-    printf("Student ID: 119010001\n"); // replace it with your student id
-    printf("Name: Your Name\n"); // replace it with your name
+    printf("Student ID: 120090727\n"); // replace it with your student id
+    printf("Name: Li Jiaqi\n"); // replace it with your name
     printf("Assignment 2: N Body Simulation OpenMP Implementation\n");
     
     return 0;
