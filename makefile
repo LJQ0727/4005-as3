@@ -3,14 +3,13 @@ n_iterations := 5000
 
 n_thds := 4
 n_omp_threads := 4
-n_mpi_nodes := 2
+n_mpi_nodes := 4
 
-checkpoint_folder := ./checkpoints/sequential_100_20221109192429/
+checkpoint_folder := ./pthread_1000_20221111092509/
 
-# change to -O2 in prod
-C_FLAG := -g3
+C_FLAG := -O2
 
-default: run_pthread
+default: run_mpiopenmpg
 
 run_seq: seq
 	./seq $(n_body) $(n_iterations)
@@ -32,7 +31,10 @@ run_mpi: mpi
 	mpirun -np $(n_mpi_nodes) ./mpi $(n_body) $(n_iterations)
 run_mpig: mpig
 	mpirun -np $(n_mpi_nodes) ./mpig $(n_body) $(n_iterations)
-
+run_mpiopenmp: mpiopenmp
+	mpirun -np $(n_mpi_nodes) ./mpiopenmp $(n_body) $(n_iterations) $(n_omp_threads)
+run_mpiopenmpg: mpiopenmpg
+	mpirun -np $(n_mpi_nodes) ./mpiopenmpg $(n_body) $(n_iterations) $(n_omp_threads)
 
 
 run_video: video
@@ -58,6 +60,11 @@ openmp:
 	g++ $(C_FLAG) ./src/openmp.cpp -o openmp -fopenmp -std=c++11
 openmpg:
 	g++ $(C_FLAG) ./src/openmp.cpp -o openmpg -fopenmp -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
+mpiopenmp:
+	mpic++ ./src/mpi.cpp -o mpiopenmp -fopenmp -std=c++11
+mpiopenmpg:
+	mpic++ ./src/mpi.cpp -o mpiopenmpg -I/usr/include -fopenmp -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
+
 video:
 	g++ ./src/video.cpp -o video -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -O2 -std=c++11
 all:
@@ -71,6 +78,8 @@ all:
 	make cudag
 	make openmp
 	make openmpg
+	make mpiopenmp
+	make mpiopenmpg
 	make video
 clean:
-	rm -f seq mpi pthread seqg mpig pthreadg cuda cudag openmp openmpg video
+	rm -f seq mpi pthread seqg mpig pthreadg cuda cudag openmp openmpg video mpiopenmp mpiopenmpg

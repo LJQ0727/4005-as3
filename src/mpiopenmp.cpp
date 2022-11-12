@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <chrono>
 #include <mpi.h>
+#include <omp.h>
 
 #ifdef GUI
 #include <GL/glut.h>
@@ -20,6 +21,8 @@ int n_iteration;
 
 int my_rank;
 int world_size;
+
+int n_omp_threads;
 
 
 void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) {
@@ -87,6 +90,8 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
 
 void check_bounds(double *x, double *y, double *vx, double *vy, int n_body, int idx, int num_my_elements) {
     //check if the body will go out of bounds. If so, it will bounce back
+    omp_set_num_threads(n_omp_threads);
+    #pragma omp parallel for
     for (int i = idx; i < idx + num_my_elements; i++)
     {
         if (x[i] <= 0 || x[i] >= bound_x)
@@ -123,6 +128,8 @@ void slave(){
 
     for (int i = 0; i < n_iteration; i++)
     {
+        omp_set_num_threads(n_omp_threads);
+        #pragma omp parallel for
         for (int j = my_rank * num_my_element; j < my_rank * num_my_element + num_my_element; j++)
         {
             update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, num_elements);
@@ -176,8 +183,8 @@ void master() {
     for (int i = 0; i < n_iteration; i++){
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
-        // TODO: MPI routine
-
+        omp_set_num_threads(n_omp_threads);
+        #pragma omp parallel for
         for (int j = my_rank * num_my_element; j < my_rank * num_my_element + num_my_element; j++)
         {
             update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, num_elements);
@@ -232,6 +239,7 @@ void master() {
 int main(int argc, char *argv[]) {
     n_body = atoi(argv[1]);
     n_iteration = atoi(argv[2]);
+    n_omp_threads = atoi(argv[3]);
 
 	MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -256,7 +264,7 @@ int main(int argc, char *argv[]) {
 	if (my_rank == 0){
 		printf("Student ID: 120090727\n"); // replace it with your student id
 		printf("Name: Li Jiaqi\n"); // replace it with your name
-		printf("Assignment 2: N Body Simulation MPI Implementation\n");
+		printf("Assignment 2: N Body Simulation MPI+OpenMP Implementation\n");
 	}
 
 	MPI_Finalize();

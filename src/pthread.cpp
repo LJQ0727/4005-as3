@@ -25,7 +25,7 @@ pthread_barrier_t barrier;  // barrier for synchronization
 void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) {
     // TODO: Generate proper initial position and mass for better visualization
     for (int i = 0; i < n; i++) {
-        m[i] = rand() % max_mass + 1.0f;
+        m[i] = rand() % (max_mass / 2) + (max_mass / 2);
         x[i] = rand() % bound_x;
         y[i] = rand() % bound_y;
         vx[i] = 0.0f;

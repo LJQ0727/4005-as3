@@ -22,7 +22,7 @@ int n_omp_threads;
 void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) {
     // TODO: Generate proper initial position and mass for better visualization
     for (int i = 0; i < n; i++) {
-        m[i] = rand() % max_mass + 1.0f;
+        m[i] = rand() % (max_mass / 2) + (max_mass / 2);
         x[i] = rand() % bound_x;
         y[i] = rand() % bound_y;
         vx[i] = 0.0f;
@@ -32,6 +32,7 @@ void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) 
 
 void check_bounds(double *x, double *y, double *vx, double *vy, int n_body) {
     //check if the body will go out of bounds. If so, it will bounce back
+    omp_set_num_threads(n_omp_threads);
     #pragma omp parallel for
     for (int i = 0; i < n_body; i++)
     {
@@ -121,7 +122,7 @@ void master() {
             update_velocity(m, x, y, vx, vy, i, n_body);
         }
 
-        omp_set_num_threads(8);
+        omp_set_num_threads(n_omp_threads);
         #pragma omp parallel for
         for (int i = 0; i < n_body; i++) {
             update_position(x, y, vx, vy, i);
