@@ -34,23 +34,60 @@ void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) 
 }
 
 
-void update_position(double *x, double *y, double *vx, double *vy, int n) {
+void update_position(double *x, double *y, double *vx, double *vy, int idx) {
     //TODO: update position 
 
-    // update position for each body
-    for (int i = 0; i < n; i++)
-    {
-        double delta_x = vx[i] * dt;    // the estimated distance that the body will move in the x direction
-        double delta_y = vy[i] * dt;    // the estimated distance that the body will move in the y direction
+    // update position for the body at idx 
+    double delta_x = vx[idx] * dt;    // the estimated distance that the body will move in the x direction
+    double delta_y = vy[idx] * dt;    // the estimated distance that the body will move in the y direction
 
-        // update the position
-        x[i] += delta_x;
-        y[i] += delta_y;
+    // update the position
+    x[idx] += delta_x;
+    y[idx] += delta_y;
+
+
+}
+
+void update_velocity(double *m, double *x, double *y, double *vx, double *vy, int idx, int n_body) {
+    // calculate force and acceleration, update velocity
+    for (int j = 0; j < n_body; j++)
+    {
+        if (j == idx) continue;
+
+        // for each pair of bodies
+        // calculate distance
+        double distance_x = x[idx] - x[j];
+        double distance_y = y[idx] - y[j];
+        double distance = sqrt(distance_x * distance_x + distance_y * distance_y);
+
+                    
+        // calculate force
+        double force = gravity_const * m[idx] * m[j] / (distance * distance + error); // the force scalar
+        // calculate acceleration from j to i
+        double acceleration_i = force / m[idx];
+        double acceleration_x_i = -acceleration_i * distance_x / distance;  // acceleration on i on x axis
+        double acceleration_y_i = -acceleration_i * distance_y / distance;
+
+        if (distance < radius2)
+        {
+            // if the distance is too small, we will reverse the velocity
+            vx[idx] = -vx[idx];
+            vy[idx] = -vy[idx];
+            break;
+        }
+
+        // update velocity
+        vx[idx] += acceleration_x_i * dt;
+        vy[idx] += acceleration_y_i * dt;
 
     }
     
+        
+}
+
+void check_bounds(double *x, double *y, double *vx, double *vy, int n_body, int idx, int num_my_elements) {
     //check if the body will go out of bounds. If so, it will bounce back
-    for (int i = 0; i < n; i++)
+    for (int i = idx; i < idx + num_my_elements; i++)
     {
         if (x[i] <= 0 || x[i] >= bound_x)
         {
@@ -62,112 +99,96 @@ void update_position(double *x, double *y, double *vx, double *vy, int n) {
         }
     }
 
-}
-
-void update_velocity(double *m, double *x, double *y, double *vx, double *vy, int n) {
-    // calculate force and acceleration, update velocity
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = i+1; j < n; j++)
-        {
-            // for each pair of bodies
-            // calculate distance
-            double distance_x = x[i] - x[j];
-            double distance_y = y[i] - y[j];
-            double distance = sqrt(distance_x * distance_x + distance_y * distance_y);
-
-                        
-            // calculate force
-            double force = gravity_const * m[i] * m[j] / (distance * distance + error); // the force scalar
-            // calculate acceleration from j to i
-            double acceleration_i = force / m[i];
-            double acceleration_x_i = -acceleration_i * distance_x / distance;  // acceleration on i on x axis
-            double acceleration_y_i = -acceleration_i * distance_y / distance;
-            // calculate acceleration from i to j
-            double acceleration_j = force / m[j];
-            double acceleration_x_j = acceleration_j * distance_x / distance;  // acceleration on j on x axis
-            double acceleration_y_j = acceleration_j * distance_y / distance;
-
-            if (distance < radius2)
-            {
-                // if the distance is too small, we will reverse the velocity of the two bodies
-                // we give them a little push to prevent from colliding again
-                vx[i] = -vx[i];
-                vy[i] = -vy[i];
-                vx[j] = -vx[j];
-                vy[j] = -vy[j];
-                break;
-            }
-
-            // update velocity
-            vx[i] += acceleration_x_i * dt;
-            vy[i] += acceleration_y_i * dt;
-            vx[j] += acceleration_x_j * dt;
-            vy[j] += acceleration_y_j * dt;
-
-        }
-    }
-        
-}
+} 
 
 
 void slave(){
-    // TODO: MPI routine
-    double* local_m;
-    double* local_x;
-    double* local_y;
-    double* local_vx;
-    double* local_vy;
-    // TODO End
+    int num_my_element = n_body / world_size;
+    int num_elements = num_my_element * world_size;
+
+    double* total_m = new double[num_elements];
+    double* total_x = new double[num_elements];
+    double* total_vy = new double[num_elements];
+    double* total_y = new double[num_elements];
+    double* total_vx = new double[num_elements];
+    
+
+    // receive the data and store in the total array
+    MPI_Bcast(total_m, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_x, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_y, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_vx, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_vy, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
+    for (int i = 0; i < n_iteration; i++)
+    {
+        for (int j = my_rank * num_my_element; j < my_rank * num_my_element + num_my_element; j++)
+        {
+            update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, num_elements);
+            update_position(total_x, total_y, total_vx, total_vy, j);
+        }
+        check_bounds(total_x, total_y, total_vx, total_vy, num_elements, my_rank * num_my_element, num_my_element);
+    
+
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_x, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_y, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_vx, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_vy, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);        
+    }
+    delete[] total_m;
+    delete[] total_x;
+    delete[] total_y;
+    delete[] total_vx;
+    delete[] total_vy;
 }
 
 
 
 void master() {
-    double* total_m = new double[n_body];
-    double* total_x = new double[n_body];
-    double* total_y = new double[n_body];
-    double* total_vx = new double[n_body];
-    double* total_vy = new double[n_body];
+    int num_my_element = n_body / world_size;
+    int num_elements = num_my_element * world_size;
 
-    int num_elements = n_body;
-    // use `world_size` and `my_rank` to determine the number of elements for each process
-    int num_my_element = num_elements / world_size;
+    double* total_m = new double[num_elements];
+    double* total_x = new double[num_elements];
+    double* total_vy = new double[num_elements];
+    double* total_y = new double[num_elements];
+    double* total_vx = new double[num_elements];
 
-    // create local receive buffer
-    double total_m_buf[num_my_element];
-    double total_x_buf[num_my_element];
-    double total_y_buf[num_my_element];
-    double total_vx_buf[num_my_element];
-    double total_vy_buf[num_my_element];
-
+    for (int i = 0; i < num_elements; i++)
+    {
+        total_m[i] = 0;
+    }
+    
+    // initialize data
     generate_data(total_m, total_x, total_y, total_vx, total_vy, n_body);
 
     Logger l = Logger("mpi", n_body, bound_x, bound_y);
 
-    // use MPI_scatterv to scatter the data
-    int counts_send[world_size];
-    for (int i = 0; i < world_size-1; i++) {
-        counts_send[i] = num_my_element;
-    }
-    counts_send[world_size-1] = num_elements - (world_size-1) * num_my_element;
-
-    int displacements[world_size];
-    for (int i = 0; i < world_size; i++) {
-        displacements[i] = i * num_my_element;
-    }
-    MPI_Scatterv(total_m, counts_send, displacements, MPI_DOUBLE, total_m_buf, num_my_element, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    // scatter the rest of the data
-    MPI_Scatterv(total_x, counts_send, displacements, MPI_DOUBLE, total_x_buf, num_my_element, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Scatterv(total_y, counts_send, displacements, MPI_DOUBLE, total_y_buf, num_my_element, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Scatterv(total_vx, counts_send, displacements, MPI_DOUBLE, total_vx_buf, num_my_element, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Scatterv(total_vy, counts_send, displacements, MPI_DOUBLE, total_vy_buf, num_my_element, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // copy the data to each other node
+    MPI_Bcast(total_m, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_x, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_y, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_vx, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(total_vy, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 
     for (int i = 0; i < n_iteration; i++){
         std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
         // TODO: MPI routine
+
+        for (int j = my_rank * num_my_element; j < my_rank * num_my_element + num_my_element; j++)
+        {
+            update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, num_elements);
+            update_position(total_x, total_y, total_vx, total_vy, j);
+        }
+        check_bounds(total_x, total_y, total_vx, total_vy, num_elements, my_rank * num_my_element, num_my_element);
+    
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_x, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_y, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_vx, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(MPI_IN_PLACE, num_my_element, MPI_DOUBLE, total_vy, num_my_element, MPI_DOUBLE, MPI_COMM_WORLD);        
         
         // TODO End
         l.save_frame(total_x, total_y);
@@ -197,11 +218,11 @@ void master() {
         #endif
     }
 
-    delete total_m;
-    delete total_x;
-    delete total_y;
-    delete total_vx;
-    delete total_vy;
+    delete[] total_m;
+    delete[] total_x;
+    delete[] total_y;
+    delete[] total_vx;
+    delete[] total_vy;
 
 }
 

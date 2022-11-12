@@ -3,6 +3,7 @@ n_iterations := 5000
 
 n_thds := 4
 n_omp_threads := 4
+n_mpi_nodes := 2
 
 checkpoint_folder := ./checkpoints/sequential_100_20221109192429/
 
@@ -27,6 +28,10 @@ run_cuda: cuda
 	./cuda $(n_body) $(n_iterations)
 run_cudag: cudag
 	./cudag $(n_body) $(n_iterations)
+run_mpi: mpi
+	mpirun -np $(n_mpi_nodes) ./mpi $(n_body) $(n_iterations)
+run_mpig: mpig
+	mpirun -np $(n_mpi_nodes) ./mpig $(n_body) $(n_iterations)
 
 
 
