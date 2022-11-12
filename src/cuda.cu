@@ -66,7 +66,6 @@ __global__ void update_velocity(double *m, double *x, double *y, double *vx, dou
             if (distance < radius2_d)
             {
                 // if the distance is too small, we will reverse the velocity of the two bodies
-                // we give them a little push to prevent from colliding again
                 vx[i] = -vx[i];
                 vy[i] = -vy[i];
                 break;
