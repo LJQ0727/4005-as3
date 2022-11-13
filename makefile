@@ -1,5 +1,5 @@
-n_body := 1000
-n_iterations := 5000
+n_body := 200
+n_iterations := 50000
 
 n_thds := 4
 n_omp_threads := 4
@@ -61,9 +61,9 @@ openmp:
 openmpg:
 	g++ $(C_FLAG) ./src/openmp.cpp -o openmpg -fopenmp -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
 mpiopenmp:
-	mpic++ ./src/mpi.cpp -o mpiopenmp -fopenmp -std=c++11
+	mpic++ ./src/mpiopenmp.cpp -o mpiopenmp -fopenmp -std=c++11
 mpiopenmpg:
-	mpic++ ./src/mpi.cpp -o mpiopenmpg -I/usr/include -fopenmp -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
+	mpic++ ./src/mpiopenmp.cpp -o mpiopenmpg -I/usr/include -fopenmp -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -std=c++11
 
 video:
 	g++ ./src/video.cpp -o video -I/usr/include -L/usr/local/lib -L/usr/lib -lglut -lGLU -lGL -lm -DGUI -O2 -std=c++11
