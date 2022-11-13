@@ -108,7 +108,7 @@ void check_bounds(double *x, double *y, double *vx, double *vy, int n_body, int 
 
 
 void slave(){
-    int num_my_element = n_body / world_size;
+    int num_my_element = n_body / (world_size - 1);
     int num_elements = num_my_element * world_size;
 
     double* total_m = new double[num_elements];
@@ -132,7 +132,7 @@ void slave(){
         #pragma omp parallel for
         for (int j = my_rank * num_my_element; j < my_rank * num_my_element + num_my_element; j++)
         {
-            update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, num_elements);
+            update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, n_body);
             update_position(total_x, total_y, total_vx, total_vy, j);
         }
         check_bounds(total_x, total_y, total_vx, total_vy, num_elements, my_rank * num_my_element, num_my_element);
@@ -153,7 +153,7 @@ void slave(){
 
 
 void master() {
-    int num_my_element = n_body / world_size;
+    int num_my_element = n_body / (world_size - 1);
     int num_elements = num_my_element * world_size;
 
     double* total_m = new double[num_elements];
@@ -170,7 +170,7 @@ void master() {
     // initialize data
     generate_data(total_m, total_x, total_y, total_vx, total_vy, n_body);
 
-    Logger l = Logger("mpi", n_body, bound_x, bound_y);
+    Logger l = Logger("mpiopenmp", n_body, bound_x, bound_y);
 
     // copy the data to each other node
     MPI_Bcast(total_m, num_elements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -187,7 +187,7 @@ void master() {
         #pragma omp parallel for
         for (int j = my_rank * num_my_element; j < my_rank * num_my_element + num_my_element; j++)
         {
-            update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, num_elements);
+            update_velocity(total_m, total_x, total_y, total_vx, total_vy, j, n_body);
             update_position(total_x, total_y, total_vx, total_vy, j);
         }
         check_bounds(total_x, total_y, total_vx, total_vy, num_elements, my_rank * num_my_element, num_my_element);
@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
 		glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 		glutInitWindowSize(500, 500); 
 		glutInitWindowPosition(0, 0);
-		glutCreateWindow("N Body Simulation MPI Implementation");
+		glutCreateWindow("N Body Simulation hybrid MPI OpenMP Implementation");
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glMatrixMode(GL_PROJECTION);
 		gluOrtho2D(0, bound_x, 0, bound_y);
