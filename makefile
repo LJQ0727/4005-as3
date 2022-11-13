@@ -1,9 +1,9 @@
-n_body := 200
+n_body := 10000
 n_iterations := 50000
 
-n_thds := 4
-n_omp_threads := 4
-n_mpi_nodes := 4
+n_thds := 1
+n_omp_threads := 1
+n_mpi_nodes := 1
 
 checkpoint_folder := ./pthread_1000_20221111092509/
 
