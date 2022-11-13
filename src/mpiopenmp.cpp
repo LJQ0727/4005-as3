@@ -153,7 +153,12 @@ void slave(){
 
 
 void master() {
-    int num_my_element = n_body / (world_size - 1);
+    int num_my_element;
+    if (world_size == 1) {
+        num_my_element = n_body;
+    } else {
+        num_my_element = n_body / (world_size - 1);
+    }
     int num_elements = num_my_element * world_size;
 
     double* total_m = new double[num_elements];
