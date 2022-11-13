@@ -1,9 +1,9 @@
 n_body := 10000
-n_iterations := 50000
+n_iterations := 5
 
-n_thds := 1
-n_omp_threads := 1
-n_mpi_nodes := 1
+n_thds := 8
+n_omp_threads := 8
+n_mpi_nodes := 8
 
 checkpoint_folder := ./pthread_1000_20221111092509/
 
@@ -12,21 +12,21 @@ C_FLAG := -O2
 default: run_mpiopenmpg
 
 run_seq: seq
-	./seq $(n_body) $(n_iterations)
+	srun ./seq $(n_body) $(n_iterations)
 run_seqg: seqg
-	./seqg $(n_body) $(n_iterations)
+	srun ./seqg $(n_body) $(n_iterations)
 run_pthread: pthread
-	./pthread $(n_body) $(n_iterations) $(n_thds)
+	srun ./pthread $(n_body) $(n_iterations) $(n_thds)
 run_pthreadg: pthreadg
-	./pthreadg $(n_body) $(n_iterations) $(n_thds)
+	srun ./pthreadg $(n_body) $(n_iterations) $(n_thds)
 run_openmp: openmp
-	./openmp $(n_body) $(n_iterations) $(n_omp_threads)
+	srun ./openmp $(n_body) $(n_iterations) $(n_omp_threads)
 run_openmpg: openmpg
-	./openmpg $(n_body) $(n_iterations) $(n_omp_threads)
+	srun ./openmpg $(n_body) $(n_iterations) $(n_omp_threads)
 run_cuda: cuda
-	./cuda $(n_body) $(n_iterations)
+	srun ./cuda $(n_body) $(n_iterations)
 run_cudag: cudag
-	./cudag $(n_body) $(n_iterations)
+	srun ./cudag $(n_body) $(n_iterations)
 run_mpi: mpi
 	mpirun -np $(n_mpi_nodes) ./mpi $(n_body) $(n_iterations)
 run_mpig: mpig
