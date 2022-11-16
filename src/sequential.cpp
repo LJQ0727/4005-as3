@@ -17,15 +17,15 @@ int n_iteration;
 
 void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) {
     // TODO: Generate proper initial position and mass for better visualization
+    srand((unsigned)time(NULL));
     for (int i = 0; i < n; i++) {
-        m[i] = rand() % (max_mass / 2) + (max_mass / 2);
-        x[i] = rand() % bound_x;
-        y[i] = rand() % bound_y;
+        m[i] = rand() % max_mass + 1.0f;
+        x[i] = 2000.0f + rand() % (bound_x / 4);
+        y[i] = 2000.0f + rand() % (bound_y / 4);
         vx[i] = 0.0f;
         vy[i] = 0.0f;
     }
 }
-
 
 
 void update_position(double *x, double *y, double *vx, double *vy, int n) {
@@ -46,11 +46,11 @@ void update_position(double *x, double *y, double *vx, double *vy, int n) {
     //check if the body will go out of bounds. If so, it will bounce back
     for (int i = 0; i < n; i++)
     {
-        if (x[i] <= 0 || x[i] >= bound_x)
+        if (x[i] <= 2000 || x[i] >= 3000)
         {
             vx[i] = -vx[i];
         }
-        if (y[i] <= 0 || y[i] >= bound_y)
+        if (y[i] <= 2000 || y[i] >= 3000)
         {
             vy[i] = -vy[i];
         }
@@ -73,6 +73,7 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
                         
             // calculate force
             double force = gravity_const * m[i] * m[j] / (distance * distance + error); // the force scalar
+            if (force > 35000) force = 35000;
             // calculate acceleration from j to i
             double acceleration_i = force / m[i];
             double acceleration_x_i = -acceleration_i * distance_x / distance;  // acceleration on i on x axis
@@ -82,7 +83,7 @@ void update_velocity(double *m, double *x, double *y, double *vx, double *vy, in
             double acceleration_x_j = acceleration_j * distance_x / distance;  // acceleration on j on x axis
             double acceleration_y_j = acceleration_j * distance_y / distance;
 
-            if (distance < radius2)
+            if (distance * distance < radius2)
             {
                 // if the distance is too small, we will reverse the velocity of the two bodies
                 vx[i] = -vx[i];

@@ -25,11 +25,11 @@ int n_iteration;
 
 __device__ __managed__ int bound_x_d = 4000;
 __device__ __managed__ int bound_y_d = 4000;
-__device__ __managed__ int max_mass_d = 40000000;
-__device__ __managed__ double error_d = 1e-9f;
+__device__ __managed__ int max_mass_d = 400;
+__device__ __managed__ double error_d = 1e-5f;
 __device__ __managed__ double dt_d = 0.0001f;
-__device__ __managed__ double gravity_const_d = 1.0f;
-__device__ __managed__ double radius2_d = 4.0f;
+__device__ __managed__ double gravity_const_d = 1000000.0f;
+__device__ __managed__ double radius2_d = 0.01f;
 
 
 __global__ void update_position(double *x, double *y, double *vx, double *vy, int n) {
@@ -58,12 +58,13 @@ __global__ void update_velocity(double *m, double *x, double *y, double *vx, dou
             
             // calculate force
             double force = gravity_const_d * m[i] * m[j] / (distance * distance + error_d); // the force scalar
+            if (force > 35000) force = 35000;
             // calculate acceleration from j to i
             double acceleration_i = force / m[i];
             double acceleration_x_i = -acceleration_i * distance_x / distance;  // acceleration on i on x axis
             double acceleration_y_i = -acceleration_i * distance_y / distance;
 
-            if (distance < radius2_d)
+            if (distance*distance < radius2_d)
             {
                 // if the distance is too small, we will reverse the velocity of the two bodies
                 vx[i] = -vx[i];
@@ -99,10 +100,11 @@ __global__ void check_bounds(double *x, double *y, double *vx, double *vy, int n
 
 void generate_data(double *m, double *x,double *y,double *vx,double *vy, int n) {
     // TODO: Generate proper initial position and mass for better visualization
+    srand((unsigned)time(NULL));
     for (int i = 0; i < n; i++) {
-        m[i] = rand() % (max_mass / 2) + (max_mass / 2);
-        x[i] = rand() % bound_x;
-        y[i] = rand() % bound_y;
+        m[i] = rand() % max_mass + 1.0f;
+        x[i] = 2000.0f + rand() % (bound_x / 4);
+        y[i] = 2000.0f + rand() % (bound_y / 4);
         vx[i] = 0.0f;
         vy[i] = 0.0f;
     }
