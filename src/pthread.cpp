@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
     #ifdef GUI
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-	glutInitWindowSize(500, 500);
+	glutInitWindowSize(800, 800);
 	glutInitWindowPosition(0, 0);
 	glutCreateWindow("Pthread");
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
